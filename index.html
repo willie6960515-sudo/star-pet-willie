@@ -12,7 +12,8 @@
             font-family: 'Noto Sans TC', sans-serif;
             background-color: #0f172a; 
             color: #e2e8f0;
-            overscroll-behavior-y: contain;
+            overscroll-behavior-y: none;
+            touch-action: none; /* 嚴格禁止手機瀏覽器下拉重整或滑動 */
             user-select: none;
             overflow: hidden;
         }
@@ -89,7 +90,7 @@
 <body class="h-screen w-screen flex flex-col bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiMzMzQiLz48L3N2Zz4=')]">
 
     <!-- 頂部資源列 -->
-    <header class="bg-slate-900 border-b-2 border-cyan-800 p-3 flex justify-between items-center z-50 shadow-[0_4px_20px_rgba(6,182,212,0.2)] overflow-x-auto">
+    <header class="bg-slate-900 border-b-2 border-cyan-800 p-3 flex justify-between items-center z-50 shadow-[0_4px_20px_rgba(6,182,212,0.2)] overflow-x-auto shrink-0">
         <div class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 cursor-pointer shrink-0 mr-4 flex items-center gap-2" onclick="goHome()">
             <i class="fas fa-satellite"></i>
             <span id="player-display-name">連線中...</span>
@@ -280,13 +281,13 @@
         </div>
     </div>
 
-    <!-- ================= 隕石防禦戰 ================= -->
+    <!-- ================= 隕石防禦戰 (嚴格不捲動版) ================= -->
     <main id="screen-meteor" class="screen flex-col items-center w-full h-full relative overflow-hidden bg-slate-900">
         <div class="absolute inset-0 opacity-30 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
         <div class="absolute top-4 left-4 right-4 flex justify-between items-start z-20">
             <div class="flex gap-1 text-red-500 text-2xl" id="meteor-hp"></div>
             <div class="flex flex-col items-end gap-2">
-                <div class="text-yellow-400 font-bold bg-slate-800/80 px-3 py-1 rounded-full border border-yellow-500">
+                <div class="text-yellow-400 font-bold bg-slate-800/80 px-3 py-1 rounded-full border border-yellow-500 shadow-md">
                     無盡防禦 波數: <span id="meteor-wave">1</span>
                 </div>
                 <button onclick="retreatMeteor()" class="btn-press bg-rose-900/80 text-rose-300 border border-rose-500 px-3 py-1 rounded-full text-xs font-bold shadow-[0_0_10px_rose]">
@@ -294,63 +295,76 @@
                 </button>
             </div>
         </div>
-        <div id="meteor-container" class="absolute top-0 left-0 w-full h-[calc(100vh-120px)] overflow-hidden z-10"></div>
-        <div class="absolute bottom-[120px] left-1/2 transform -translate-x-1/2 w-28 h-28 z-30 flex justify-center items-end pointer-events-none">
+        
+        <!-- 空域容器 (動態計算高度確保底部面板不受擠壓) -->
+        <div id="meteor-container" class="absolute top-0 left-0 w-full h-[calc(100vh-140px)] overflow-hidden z-10"></div>
+        
+        <!-- 幻獸與地表 -->
+        <div class="absolute bottom-[140px] left-1/2 transform -translate-x-1/2 w-28 h-28 z-30 flex justify-center items-end pointer-events-none">
             <div id="meteor-pet-sprite" class="w-full h-full drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] origin-bottom transition-transform"></div>
         </div>
-        <div class="absolute bottom-[100px] left-1/2 transform -translate-x-1/2 w-32 h-4 bg-cyan-900 rounded-full border border-cyan-400 z-20 shadow-[0_0_10px_cyan]"></div>
-        <div class="absolute bottom-0 w-full h-[120px] sci-fi-panel rounded-t-2xl z-40 flex flex-col items-center justify-center p-4">
+        <div class="absolute bottom-[130px] left-1/2 transform -translate-x-1/2 w-32 h-4 bg-cyan-900 rounded-full border border-cyan-400 z-20 shadow-[0_0_10px_cyan]"></div>
+        
+        <!-- 底部面板 (固定高度) -->
+        <div class="absolute bottom-0 w-full h-[140px] sci-fi-panel rounded-t-2xl z-40 flex flex-col items-center justify-center p-2 shrink-0">
             <button id="btn-wind-skill-meteor" onclick="useWindSkillMeteor()" class="hidden absolute -top-12 right-4 bg-emerald-600 border border-emerald-300 text-white px-3 py-1 rounded-full text-xs font-bold shadow-[0_0_10px_emerald]">🌪️ 吹散干擾 (1次)</button>
             <div class="text-cyan-400 text-sm mb-1 font-bold flex justify-between w-full px-2">
                 <span><i class="fas fa-crosshairs"></i> 目標：</span>
                 <span id="meteor-lesson-badge" class="text-xs bg-cyan-900 px-2 py-1 rounded"></span>
             </div>
-            <div id="meteor-question" class="text-white text-lg font-bold text-center leading-tight"></div>
+            <!-- 題目確保至少佔據一定高度且垂直居中 -->
+            <div id="meteor-question" class="text-white text-base md:text-lg font-bold text-center leading-tight min-h-[40px] flex items-center justify-center"></div>
         </div>
     </main>
 
-    <!-- ================= 巨獸討伐戰 ================= -->
-    <main id="screen-boss" class="screen flex-col items-center p-4 w-full h-full bg-slate-950 relative overflow-hidden">
-        <div class="w-full max-w-lg flex flex-col h-full z-10">
-            <div class="flex-1 flex flex-col items-center justify-center relative pt-4">
-                <div class="flex justify-between w-full px-2 mb-2">
-                    <div class="text-orange-400 font-bold bg-slate-800/80 px-2 py-1 rounded border border-orange-500 text-sm shadow-[0_0_5px_orange]">
-                        連擊: <span id="combo-counter" class="text-xl">0</span>
-                    </div>
-                    <div class="text-yellow-300 font-bold bg-slate-800/80 px-2 py-1 rounded border border-yellow-500 text-sm">
-                        <i class="fas fa-stopwatch"></i> <span id="boss-timer-text">10.0</span>s
-                    </div>
+    <!-- ================= 巨獸討伐戰 (嚴格不捲動版) ================= -->
+    <main id="screen-boss" class="screen flex-col items-center p-2 w-full h-full bg-slate-950 relative overflow-hidden">
+        <!-- 使用 Flex 限制總高度，不允許 Scroll -->
+        <div class="w-full max-w-lg flex flex-col h-full z-10 overflow-hidden">
+            <!-- 頂部資訊 (Combo, Time) -->
+            <div class="flex justify-between w-full px-2 mb-1 shrink-0 pt-1">
+                <div class="text-orange-400 font-bold bg-slate-800/80 px-2 py-1 rounded border border-orange-500 text-sm shadow-[0_0_5px_orange]">
+                    連擊: <span id="combo-counter" class="text-xl">0</span>
                 </div>
-                <div id="boss-name-display" class="text-red-400 font-bold mb-1 text-xl drop-shadow-[0_0_5px_red]">🔥 裝甲炎魔龍 🔥</div>
-                <div id="boss-trait-display" class="text-slate-400 text-xs mb-2">特性: 極速型</div>
-                
-                <div class="w-4/5 h-6 bg-slate-900 rounded-full border-2 border-slate-700 overflow-hidden mb-4 relative">
-                    <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-300" style="width: 100%;"></div>
-                    <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-white drop-shadow">HP: <span id="boss-hp-text">300</span></div>
+                <div class="text-yellow-300 font-bold bg-slate-800/80 px-2 py-1 rounded border border-yellow-500 text-sm">
+                    <i class="fas fa-stopwatch"></i> <span id="boss-timer-text">10.0</span>s
                 </div>
+            </div>
+            
+            <!-- Boss 資訊 -->
+            <div id="boss-name-display" class="text-red-400 font-bold mb-1 text-lg drop-shadow-[0_0_5px_red] text-center shrink-0 leading-tight">🔥 裝甲炎魔龍 🔥</div>
+            <div id="boss-trait-display" class="text-slate-400 text-xs mb-1 text-center shrink-0">特性: 極速型</div>
+            
+            <!-- Boss 血條 -->
+            <div class="w-4/5 mx-auto h-4 bg-slate-900 rounded-full border border-slate-700 overflow-hidden mb-2 relative shrink-0">
+                <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-300" style="width: 100%;"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-white drop-shadow">HP: <span id="boss-hp-text">300</span></div>
+            </div>
+            
+            <!-- 中間戰鬥畫面 (高度彈性縮放，保證按鈕不被擠掉) -->
+            <div class="relative flex-1 w-full flex flex-col items-center justify-center min-h-0 mb-1">
+                <div id="boss-sprite" class="w-full flex-1 max-h-[35vh] flex items-center justify-center filter drop-shadow-[0_10px_10px_rgba(220,38,38,0.5)] transition-transform"></div>
+                <div id="dmg-float-text" class="absolute top-10 left-1/2 transform -translate-x-1/2 text-2xl font-black text-yellow-300 pointer-events-none opacity-0 z-50"></div>
                 
-                <div class="relative mb-8 mt-2 w-full flex justify-center">
-                    <div id="boss-sprite" class="h-40 md:h-56 w-full filter drop-shadow-[0_10px_10px_rgba(220,38,38,0.5)] transition-transform"></div>
-                    <div id="dmg-float-text" class="absolute top-0 left-1/2 transform -translate-x-1/2 text-2xl font-black text-yellow-300 pointer-events-none opacity-0 z-50"></div>
-                </div>
-                
-                <div class="absolute bottom-4 w-full flex justify-between items-end px-2">
-                    <div id="battle-pet-sprite" class="w-28 h-28 drop-shadow-[0_5px_15px_rgba(255,255,255,0.4)] z-20"></div>
-                    <div class="text-cyan-400 font-bold flex flex-col items-end gap-1 mb-2">
+                <div class="absolute bottom-0 w-full flex justify-between items-end px-2">
+                    <div id="battle-pet-sprite" class="w-20 h-20 md:w-28 md:h-28 drop-shadow-[0_5px_15px_rgba(255,255,255,0.4)] z-20"></div>
+                    <div class="text-cyan-400 font-bold flex flex-col items-end gap-1 mb-1">
                         <span class="text-xs bg-slate-800/80 px-2 py-1 rounded">裝甲防禦</span>
                         <div id="player-hp" class="flex gap-1 text-cyan-300"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="sci-fi-panel rounded-2xl p-4 mt-auto mb-4 border-red-500/50 relative">
-                <button id="btn-wind-skill-boss" onclick="useWindSkillBoss()" class="hidden absolute -top-8 right-4 bg-emerald-600 border border-emerald-300 text-white px-3 py-1 rounded-full text-xs font-bold shadow-[0_0_10px_emerald]">🌪️ 刪除錯誤 (1次)</button>
-                <div class="w-full h-2 bg-slate-800 rounded-full mb-3 overflow-hidden">
+            <!-- 底部題目與四個選項區 (高度固定不被擠壓) -->
+            <div class="sci-fi-panel rounded-xl p-3 border-red-500/50 relative shrink-0 mb-1">
+                <button id="btn-wind-skill-boss" onclick="useWindSkillBoss()" class="hidden absolute -top-10 right-4 bg-emerald-600 border border-emerald-300 text-white px-3 py-1 rounded-full text-xs font-bold shadow-[0_0_10px_emerald]">🌪️ 刪除錯誤 (1次)</button>
+                <div class="w-full h-2 bg-slate-800 rounded-full mb-2 overflow-hidden">
                     <div id="boss-timer-bar" class="h-full bg-cyan-400 transition-all duration-100" style="width: 100%;"></div>
                 </div>
                 <div class="text-xs text-cyan-500 mb-1 font-bold text-right w-full" id="boss-lesson-badge"></div>
-                <div id="boss-question" class="text-white text-lg font-bold mb-4 min-h-[60px] leading-relaxed break-words"></div>
-                <div id="boss-options" class="grid grid-cols-2 gap-3"></div>
+                <div id="boss-question" class="text-white text-sm md:text-base font-bold mb-2 min-h-[40px] leading-snug break-words flex items-center"></div>
+                <!-- 選項網格 (確保 4 個選項完美顯示) -->
+                <div id="boss-options" class="grid grid-cols-2 gap-2"></div>
             </div>
         </div>
     </main>
@@ -369,7 +383,10 @@
             </div>
             
             <h3 id="pet-name" class="text-2xl font-bold text-white mb-1">未解鎖</h3>
-            <p id="pet-desc" class="text-slate-400 text-sm mb-4 text-center">...</p>
+            <p id="pet-desc" class="text-slate-400 text-sm mb-2 text-center">...</p>
+            
+            <!-- 新增：進化石需求提示 (僅在即將進化時顯示) -->
+            <div id="pet-stone-req" class="text-purple-400 font-bold text-sm text-center mb-2 hidden"></div>
 
             <div class="w-full mb-6">
                 <div class="flex justify-between text-xs font-bold text-emerald-300 mb-1">
@@ -1328,7 +1345,7 @@
             const optsEl = document.getElementById('boss-options'); optsEl.innerHTML = '';
             getOptions(currentBossQ.idiom).forEach(opt => {
                 let btn = document.createElement('button');
-                btn.className = "boss-opt btn-press bg-slate-700 text-white font-bold py-4 rounded-xl border border-slate-500";
+                btn.className = "boss-opt btn-press bg-slate-700 text-white font-bold py-2 md:py-3 px-2 rounded-lg border border-slate-500 text-sm md:text-base leading-tight";
                 btn.innerText = opt; btn.onclick = () => attackBoss(opt);
                 optsEl.appendChild(btn);
             });
@@ -1439,12 +1456,23 @@
                 document.getElementById('pet-desc').innerText = `技能：${pet.skillDesc}`;
                 document.getElementById('pet-exp-text').innerText = `${pData.exp} / ${pData.level}`;
                 document.getElementById('pet-exp-bar').style.width = `${Math.min(100, (pData.exp/pData.level)*100)}%`;
+                
+                // 判斷是否需要進化石
+                let stoneCost = (pData.level === 9) ? 2 : ((pData.level === 19) ? 4 : 0);
+                if (stoneCost > 0) {
+                    document.getElementById('pet-stone-req').innerHTML = `<i class="fas fa-gem"></i> 突破需 ${stoneCost} 顆進化石`;
+                    document.getElementById('pet-stone-req').classList.remove('hidden');
+                } else {
+                    document.getElementById('pet-stone-req').classList.add('hidden');
+                }
+
             } else {
                 document.getElementById('pet-sprite').innerHTML = `<div class="text-6xl text-slate-500">❓</div>`;
                 document.getElementById('pet-name').innerText = "未解鎖";
                 document.getElementById('pet-name').className = `text-3xl font-black mb-1 text-slate-500`;
                 document.getElementById('pet-level-badge').innerText = `Lv. ?`;
                 document.getElementById('pet-desc').innerText = "參與星空召喚解鎖。";
+                document.getElementById('pet-stone-req').classList.add('hidden');
                 document.getElementById('pet-exp-text').innerText = `0 / 0`;
                 document.getElementById('pet-exp-bar').style.width = `0%`;
             }
@@ -1453,12 +1481,27 @@
         window.feedPet = () => {
             let viewId = currentViewIdx + 1;
             if (!inventory.unlockedPets.includes(viewId)) return showToast("尚未解鎖此幻獸！", "#ef4444");
+            
+            let pData = inventory.petsData[viewId];
+            let isLv9 = pData.level === 9;
+            let isLv19 = pData.level === 19;
+            let stoneCost = isLv9 ? 2 : (isLv19 ? 4 : 0);
+
             if (inventory.meat < 1) return showToast("肉塊不足！去打隕石防禦戰吧", "#ef4444");
             
-            inventory.meat--; inventory.petsData[viewId].exp++;
-            if (inventory.petsData[viewId].exp >= inventory.petsData[viewId].level) {
-                inventory.petsData[viewId].exp = 0; inventory.petsData[viewId].level++;
-                showToast("升級了！", "#10b981");
+            // 升級或進化邏輯
+            if (pData.exp + 1 >= pData.level) {
+                if (stoneCost > 0 && inventory.stones < stoneCost) {
+                    return showToast(`突破境界需 ${stoneCost} 顆進化石！`, "#ef4444");
+                }
+                inventory.meat--; 
+                if (stoneCost > 0) inventory.stones -= stoneCost;
+                pData.exp = 0; 
+                pData.level++;
+                showToast("境界突破！進化成功！", "#10b981");
+            } else {
+                inventory.meat--; 
+                pData.exp++;
             }
             saveInventory(); renderPet();
         };
@@ -1466,11 +1509,22 @@
         window.feedPetMax = () => {
             let viewId = currentViewIdx + 1;
             if (!inventory.unlockedPets.includes(viewId)) return showToast("尚未解鎖此幻獸！", "#ef4444");
+            
             let pData = inventory.petsData[viewId];
             let needed = pData.level - pData.exp;
+            let isLv9 = pData.level === 9;
+            let isLv19 = pData.level === 19;
+            let stoneCost = isLv9 ? 2 : (isLv19 ? 4 : 0);
+
             if (inventory.meat < needed) return showToast("肉塊不夠直升一級！", "#ef4444");
+            if (stoneCost > 0 && inventory.stones < stoneCost) {
+                return showToast(`突破境界需 ${stoneCost} 顆進化石！`, "#ef4444");
+            }
             
-            inventory.meat -= needed; pData.level++; pData.exp = 0;
+            inventory.meat -= needed; 
+            if (stoneCost > 0) inventory.stones -= stoneCost;
+            pData.level++; 
+            pData.exp = 0;
             showToast(`一鍵升級成功！Lv.${pData.level}`, "#10b981");
             saveInventory(); renderPet();
         }
