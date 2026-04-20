@@ -1202,7 +1202,7 @@
             }
             
             document.getElementById('meteor-container').innerHTML = '';
-            setTimeout(window.goHome, 3000);
+            setTimeout(goToDefenseLeaderboard, 3000);
         }
 
         function nextMeteorWave() {
@@ -1335,7 +1335,7 @@
                 
                 document.getElementById('boss-sprite').innerHTML = '<div class="text-6xl">☠️</div>';
                 showVictory("討伐成功！", `<span class="text-yellow-400">耗時 ${killTime.toFixed(1)} 秒<br>獲得 ${Math.floor(reward)} 星塵幣</span>`);
-                setTimeout(window.goHome, 3500); return;
+                setTimeout(() => goToBossLeaderboard(currentBoss.id), 3500); return;
             }
 
             isBossResolving = false; currentBossQ = getNextIdiom();
@@ -1617,9 +1617,7 @@
             }, (error) => console.error("讀取榜單失敗", error));
         }
 
-        window.showLeaderboard = () => { 
-            showScreen('leaderboard'); 
-            
+        function initBossSelect() {
             const bossSelect = document.getElementById('leaderboard-boss-select');
             if (bossSelect.children.length === 0) {
                 BOSS_DATA.forEach(boss => {
@@ -1628,7 +1626,34 @@
                     bossSelect.appendChild(opt);
                 });
             }
+        }
+
+        window.showLeaderboard = () => { 
+            showScreen('leaderboard'); 
+            initBossSelect();
             renderLeaderboard(); 
+        };
+
+        window.goToBossLeaderboard = (bossId) => {
+            initBossSelect();
+            currentBoard = 'speed';
+            ['wealth', 'speed', 'defense', 'scholar'].forEach(b => {
+                document.getElementById(`tab-${b}`).className = `px-4 py-2 rounded-full text-sm font-bold shrink-0 transition ${b === currentBoard ? 'bg-purple-700 text-white shadow-[0_0_10px_purple]' : 'bg-slate-800 text-slate-400 border border-slate-600'}`;
+            });
+            document.getElementById('boss-leaderboard-filter').classList.remove('hidden');
+            document.getElementById('leaderboard-boss-select').value = bossId;
+            showScreen('leaderboard');
+            renderLeaderboard();
+        };
+
+        window.goToDefenseLeaderboard = () => {
+            currentBoard = 'defense';
+            ['wealth', 'speed', 'defense', 'scholar'].forEach(b => {
+                document.getElementById(`tab-${b}`).className = `px-4 py-2 rounded-full text-sm font-bold shrink-0 transition ${b === currentBoard ? 'bg-purple-700 text-white shadow-[0_0_10px_purple]' : 'bg-slate-800 text-slate-400 border border-slate-600'}`;
+            });
+            document.getElementById('boss-leaderboard-filter').classList.add('hidden');
+            showScreen('leaderboard');
+            renderLeaderboard();
         };
 
         window.switchBoard = (board) => {
@@ -1641,13 +1666,21 @@
         };
 
         function renderLeaderboard() {
-            const listEl = document.getElementById('leaderboard-list'); listEl.innerHTML = '';
+            const listEl = document.getElementById('leaderboard-list'); 
+            listEl.innerHTML = '';
+            
             let sortedData = [...allUsersData];
             let valueKey = '', unit = '', formatFn = (val) => val;
+            
+            // 紀錄當前玩家在該榜單的「本地分數」
+            let myCurrentScore = null;
+            let hasPlayed = false;
 
             if (currentBoard === 'wealth') {
                 sortedData.sort((a, b) => (b.stardust || 0) - (a.stardust || 0));
                 valueKey = 'stardust'; unit = '星塵'; formatFn = Math.floor;
+                myCurrentScore = inventory.stardust || 0;
+                hasPlayed = true;
             } else if (currentBoard === 'speed') {
                 const selectedBossId = document.getElementById('leaderboard-boss-select').value;
                 sortedData = sortedData.map(u => {
@@ -1657,35 +1690,52 @@
                 sortedData = sortedData.filter(u => u.currentBossTime < 999);
                 sortedData.sort((a, b) => a.currentBossTime - b.currentBossTime);
                 valueKey = 'currentBossTime'; unit = '秒'; formatFn = (v) => v.toFixed(1);
+                
+                if (inventory.bossRecords && inventory.bossRecords[selectedBossId]) {
+                    myCurrentScore = inventory.bossRecords[selectedBossId];
+                    hasPlayed = true;
+                }
             } else if (currentBoard === 'defense') {
                 sortedData.sort((a, b) => (b.maxMeteorWaves || 0) - (a.maxMeteorWaves || 0));
                 valueKey = 'maxMeteorWaves'; unit = '波';
+                myCurrentScore = inventory.maxMeteorWaves || 0;
+                if (myCurrentScore > 0) hasPlayed = true;
             } else if (currentBoard === 'scholar') {
                 sortedData = sortedData.filter(u => (u.totalAnswered || 0) >= 10);
                 sortedData.forEach(u => u.accuracy = (u.correctAnswers / u.totalAnswered) * 100);
                 sortedData.sort((a, b) => b.accuracy - a.accuracy);
                 valueKey = 'accuracy'; unit = '%正確'; formatFn = (v) => v.toFixed(1);
+                
+                if (inventory.totalAnswered > 0) {
+                    myCurrentScore = (inventory.correctAnswers / inventory.totalAnswered) * 100;
+                    hasPlayed = true;
+                }
             }
 
-            if (sortedData.length === 0) {
-                listEl.innerHTML = '<div class="text-center text-slate-500 mt-10">目前榜單空缺，等你來挑戰！</div>'; return;
-            }
+            let isUserRanked = false;
 
+            // 1. 繪製正式榜單
             sortedData.forEach((user, index) => {
                 let rankIcon = `<span class="text-slate-400 font-bold">#${index + 1}</span>`;
                 let bgClass = "bg-slate-800";
                 
-                if (index === 0) { rankIcon = "🥇"; bgClass = "bg-yellow-900/40 border border-yellow-500"; }
-                else if (index === 1) { rankIcon = "🥈"; bgClass = "bg-slate-700 border border-slate-400"; }
-                else if (index === 2) { rankIcon = "🥉"; bgClass = "bg-orange-900/40 border border-orange-700"; }
-
                 const isMe = currentUser && user.id === currentUser.uid;
-                if (isMe) bgClass += " shadow-[0_0_10px_cyan]";
+                
+                if (isMe) {
+                    isUserRanked = true;
+                    // 特殊顏色標記自己 (青色霓虹邊框 + 放大效果)
+                    bgClass = "bg-cyan-900/60 border-2 border-cyan-400 shadow-[0_0_15px_cyan] scale-[1.02] transform transition-all z-10 relative";
+                } else {
+                    if (index === 0) { rankIcon = "🥇"; bgClass = "bg-yellow-900/40 border border-yellow-500"; }
+                    else if (index === 1) { rankIcon = "🥈"; bgClass = "bg-slate-700 border border-slate-400"; }
+                    else if (index === 2) { rankIcon = "🥉"; bgClass = "bg-orange-900/40 border border-orange-700"; }
+                }
 
                 let val = user[valueKey] !== undefined ? formatFn(user[valueKey]) : 0;
                 let displayName = user.customName || user.displayName || '神秘使者';
 
                 let item = document.createElement('div');
+                if (isMe) item.id = 'my-rank-row'; // 給自己加上錨點
                 item.className = `leaderboard-item p-3 rounded-xl flex justify-between items-center ${bgClass}`;
                 item.innerHTML = `
                     <div class="flex items-center gap-3">
@@ -1695,12 +1745,53 @@
                             ${isMe ? '<span class="text-xs bg-cyan-600 px-1 rounded ml-1 text-white">我</span>' : ''}
                         </div>
                     </div>
-                    <div class="text-lg font-black text-purple-300">
-                        ${val} <span class="text-xs text-slate-400">${unit}</span>
+                    <div class="text-lg font-black ${isMe ? 'text-cyan-200' : 'text-purple-300'}">
+                        ${val} <span class="text-xs ${isMe ? 'text-cyan-400' : 'text-slate-400'}">${unit}</span>
                     </div>
                 `;
                 listEl.appendChild(item);
             });
+            
+            // 2. 若玩家尚未入榜，在底部顯示提示與當前分數
+            if (currentUser && !isUserRanked) {
+                let unrankedMsg = '尚未挑戰';
+                let scoreDisplay = '-';
+                
+                if (hasPlayed && myCurrentScore !== null) {
+                    unrankedMsg = currentBoard === 'scholar' && inventory.totalAnswered < 10 ? '需答滿10題' : '尚未入榜';
+                    scoreDisplay = `${formatFn(myCurrentScore)} <span class="text-xs">${unit}</span>`;
+                }
+
+                let item = document.createElement('div');
+                item.id = 'my-rank-row'; // 給自己加上錨點
+                item.className = `leaderboard-item p-3 rounded-xl flex justify-between items-center bg-slate-800/80 border-2 border-dashed border-slate-500 mt-2 opacity-90`;
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="text-xl w-8 text-center text-slate-500 font-bold">-</div>
+                        <div class="font-bold text-slate-300">
+                            ${inventory.customName || '我'}
+                            <span class="text-xs bg-slate-600 px-2 py-0.5 rounded ml-2 text-white">${unrankedMsg}</span>
+                        </div>
+                    </div>
+                    <div class="text-lg font-black text-slate-400">
+                        ${scoreDisplay}
+                    </div>
+                `;
+                listEl.appendChild(item);
+            }
+
+            // 若榜單完全沒人
+            if (listEl.children.length === 0) {
+                listEl.innerHTML = '<div class="text-center text-slate-500 mt-10">目前榜單空缺，等你來挑戰！</div>'; 
+            }
+
+            // 3. 自動捲動定位到自己的名次
+            setTimeout(() => {
+                const myRow = document.getElementById('my-rank-row');
+                if (myRow) {
+                    myRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 300);
         }
     </script>
 </body>
