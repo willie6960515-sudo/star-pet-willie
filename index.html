@@ -283,10 +283,15 @@
     <!-- ================= 隕石防禦戰 ================= -->
     <main id="screen-meteor" class="screen flex-col items-center w-full h-full relative overflow-hidden bg-slate-900">
         <div class="absolute inset-0 opacity-30 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
-        <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-20">
+        <div class="absolute top-4 left-4 right-4 flex justify-between items-start z-20">
             <div class="flex gap-1 text-red-500 text-2xl" id="meteor-hp"></div>
-            <div class="text-yellow-400 font-bold bg-slate-800/80 px-3 py-1 rounded-full border border-yellow-500">
-                無盡防禦 波數: <span id="meteor-wave">1</span>
+            <div class="flex flex-col items-end gap-2">
+                <div class="text-yellow-400 font-bold bg-slate-800/80 px-3 py-1 rounded-full border border-yellow-500">
+                    無盡防禦 波數: <span id="meteor-wave">1</span>
+                </div>
+                <button onclick="retreatMeteor()" class="btn-press bg-rose-900/80 text-rose-300 border border-rose-500 px-3 py-1 rounded-full text-xs font-bold shadow-[0_0_10px_rose]">
+                    <i class="fas fa-sign-out-alt"></i> 撤退結算
+                </button>
             </div>
         </div>
         <div id="meteor-container" class="absolute top-0 left-0 w-full h-[calc(100vh-120px)] overflow-hidden z-10"></div>
@@ -416,6 +421,12 @@
             <button onclick="switchBoard('defense')" id="tab-defense" class="px-4 py-2 bg-slate-800 text-slate-400 rounded-full text-sm font-bold border border-slate-600 shrink-0">最強防禦榜</button>
             <button onclick="switchBoard('scholar')" id="tab-scholar" class="px-4 py-2 bg-slate-800 text-slate-400 rounded-full text-sm font-bold border border-slate-600 shrink-0">學霸榮譽榜</button>
         </div>
+        <!-- 新增：十二星座 Boss 選擇下拉選單 (預設隱藏) -->
+        <div id="boss-leaderboard-filter" class="w-full max-w-md mb-2 hidden relative">
+            <select id="leaderboard-boss-select" onchange="renderLeaderboard()" class="w-full bg-slate-800 text-cyan-300 py-2 px-4 rounded-xl border border-slate-600 focus:border-cyan-400 outline-none font-bold text-center appearance-none cursor-pointer">
+            </select>
+            <i class="fas fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-cyan-500 pointer-events-none"></i>
+        </div>
         <div class="w-full max-w-md sci-fi-panel rounded-xl p-2 flex-1 overflow-y-auto relative border-purple-500/50">
             <div id="leaderboard-list" class="flex flex-col gap-2">
                 <div class="text-center text-slate-400 mt-10"><i class="fas fa-spinner fa-spin text-3xl mb-2"></i><br>讀取星際數據中...</div>
@@ -480,6 +491,7 @@
             stardust: 0, meat: 0, stones: 0,
             unlockedPets: [], universalShards: 0, petsData: {},
             totalAnswered: 0, correctAnswers: 0, maxMeteorWaves: 0, fastestBossTime: 999,
+            bossRecords: {}, // 新增：獨立紀錄每隻 Boss 的最快時間
             customName: "" 
         };
         let allUsersData = [];
@@ -867,19 +879,39 @@
             document.getElementById('meteor-hp').innerHTML = Array(3).fill(0).map((_,i) => i < baseHp ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="far fa-heart text-slate-600"></i>').join('');
         }
 
+        window.retreatMeteor = () => {
+            if (isWaveResolving) return;
+            isWaveResolving = true;
+            endMeteorGame(true);
+        };
+
+        function endMeteorGame(isRetreat) {
+            let reward = (meteorWave - 1) * (activePetId === 3 ? 1.5 : 1); 
+            inventory.meat += reward;
+            if ((meteorWave - 1) > (inventory.maxMeteorWaves || 0)) inventory.maxMeteorWaves = meteorWave - 1;
+            saveInventory();
+            
+            if (isRetreat) {
+                showVictory("成功撤退！", `<span class="text-yellow-400">防禦了 ${meteorWave-1} 波<br>獲得 ${Math.floor(reward)} 肉塊</span>`);
+            } else {
+                showVictory("防線崩潰！", `<span class="text-red-400">撐過了 ${meteorWave-1} 波<br>獲得 ${Math.floor(reward)} 肉塊</span>`);
+            }
+            
+            document.getElementById('meteor-container').innerHTML = '';
+            setTimeout(window.goHome, 3000);
+        }
+
         function nextMeteorWave() {
             if (baseHp <= 0) {
-                let reward = meteorWave * (activePetId === 3 ? 1.5 : 1); 
-                inventory.meat += reward;
-                if (meteorWave > inventory.maxMeteorWaves) inventory.maxMeteorWaves = meteorWave - 1;
-                saveInventory();
-                showVictory("防線崩潰！", `<span class="text-red-400">撐過了 ${meteorWave-1} 波<br>獲得 ${Math.floor(reward)} 肉塊</span>`);
-                setTimeout(window.goHome, 3000); return;
+                endMeteorGame(false); return;
             }
 
             isWaveResolving = false;
             currMeteorCount = activePetId === 1 ? 3 : 5; 
-            currMeteorSpeed = Math.max(5, (activePetId === 2 ? 16 : 12) - (meteorWave * 0.3));
+            
+            // 每次加快 1% 掉落速度 (以指數下降時間)
+            let baseSpeed = activePetId === 2 ? 16 : 12;
+            currMeteorSpeed = Math.max(3, baseSpeed * Math.pow(0.99, meteorWave - 1));
 
             currentMeteorTarget = getNextIdiom();
             document.getElementById('meteor-question').innerText = `「${currentMeteorTarget.meaning}」`;
@@ -918,21 +950,34 @@
             isWaveResolving = true; inventory.totalAnswered++;
 
             const petSprite = document.getElementById('meteor-pet-sprite');
-            petSprite.classList.remove('pet-attack-anim');
+            
+            // 計算幻獸衝刺目標的相對座標
+            const petRect = petSprite.getBoundingClientRect();
+            const meteorRect = element.getBoundingClientRect();
+            const dashX = (meteorRect.left + meteorRect.width / 2) - (petRect.left + petRect.width / 2);
+            const dashY = (meteorRect.top + meteorRect.height / 2) - (petRect.top + petRect.height / 2);
+            
+            petSprite.style.setProperty('--dash-x', `${dashX}px`);
+            petSprite.style.setProperty('--dash-y', `${dashY}px`);
+            
+            petSprite.classList.remove('pet-meteor-dash-anim');
             void petSprite.offsetWidth;
-            petSprite.classList.add('pet-attack-anim');
+            petSprite.classList.add('pet-meteor-dash-anim');
 
-            if (selected === currentMeteorTarget.idiom) {
-                inventory.correctAnswers++;
-                element.innerHTML = '💥'; element.style.animationPlayState = 'paused';
-                setTimeout(() => { document.getElementById('meteor-container').innerHTML = ''; meteorWave++; updateMeteorUI(); nextMeteorWave(); }, 300);
-            } else {
-                window.recordMistake(currentMeteorTarget.idiom);
-                if (activePetId === 4 && Math.random() < 0.3) {
-                    showToast("絕對零度：防禦了傷害！", "#93c5fd");
-                } else { document.body.classList.add('shake'); baseHp--; }
-                setTimeout(() => { document.body.classList.remove('shake'); document.getElementById('meteor-container').innerHTML = ''; meteorWave++; updateMeteorUI(); nextMeteorWave(); }, 400);
-            }
+            // 配合衝刺動畫，延遲 140ms 觸發命中與爆炸效果
+            setTimeout(() => {
+                if (selected === currentMeteorTarget.idiom) {
+                    inventory.correctAnswers++;
+                    element.innerHTML = '💥'; element.style.animationPlayState = 'paused';
+                    setTimeout(() => { document.getElementById('meteor-container').innerHTML = ''; meteorWave++; updateMeteorUI(); nextMeteorWave(); }, 300);
+                } else {
+                    window.recordMistake(currentMeteorTarget.idiom);
+                    if (activePetId === 4 && Math.random() < 0.3) {
+                        showToast("絕對零度：防禦了傷害！", "#93c5fd");
+                    } else { document.body.classList.add('shake'); baseHp--; }
+                    setTimeout(() => { document.body.classList.remove('shake'); document.getElementById('meteor-container').innerHTML = ''; meteorWave++; updateMeteorUI(); nextMeteorWave(); }, 400);
+                }
+            }, 140);
         }
         
         function meteorHitBase() {
@@ -978,6 +1023,13 @@
                 let killTime = (Date.now() - battleStartTime) / 1000;
                 let reward = 200 * (activePetId === 3 ? 1.2 : 1); 
                 inventory.stardust += reward;
+                
+                // 獨立紀錄每隻 Boss 的最快擊殺時間
+                if (!inventory.bossRecords) inventory.bossRecords = {};
+                if (!inventory.bossRecords[currentBoss.id] || killTime < inventory.bossRecords[currentBoss.id]) {
+                    inventory.bossRecords[currentBoss.id] = killTime;
+                }
+                
                 if (killTime < inventory.fastestBossTime) inventory.fastestBossTime = killTime; 
                 saveInventory();
                 
@@ -1220,13 +1272,32 @@
             }, (error) => console.error("讀取榜單失敗", error));
         }
 
-        window.showLeaderboard = () => { showScreen('leaderboard'); renderLeaderboard(); };
+        window.showLeaderboard = () => { 
+            showScreen('leaderboard'); 
+            
+            // 初始化下拉選單選項
+            const bossSelect = document.getElementById('leaderboard-boss-select');
+            if (bossSelect.children.length === 0) {
+                BOSS_DATA.forEach(boss => {
+                    let opt = document.createElement('option');
+                    opt.value = boss.id;
+                    opt.innerText = boss.name;
+                    bossSelect.appendChild(opt);
+                });
+            }
+            
+            renderLeaderboard(); 
+        };
 
         window.switchBoard = (board) => {
             currentBoard = board;
             ['wealth', 'speed', 'defense', 'scholar'].forEach(b => {
                 document.getElementById(`tab-${b}`).className = `px-4 py-2 rounded-full text-sm font-bold shrink-0 transition ${b === currentBoard ? 'bg-purple-700 text-white shadow-[0_0_10px_purple]' : 'bg-slate-800 text-slate-400 border border-slate-600'}`;
             });
+            
+            // 只有弒神英雄榜顯示 Boss 選擇器
+            document.getElementById('boss-leaderboard-filter').classList.toggle('hidden', currentBoard !== 'speed');
+            
             renderLeaderboard();
         };
 
@@ -1240,9 +1311,15 @@
                 sortedData.sort((a, b) => (b.stardust || 0) - (a.stardust || 0));
                 valueKey = 'stardust'; unit = '星塵'; formatFn = Math.floor;
             } else if (currentBoard === 'speed') {
-                sortedData = sortedData.filter(u => u.fastestBossTime && u.fastestBossTime < 999);
-                sortedData.sort((a, b) => a.fastestBossTime - b.fastestBossTime);
-                valueKey = 'fastestBossTime'; unit = '秒'; formatFn = (v) => v.toFixed(1);
+                // 根據選取的 Boss ID 篩選與排序
+                const selectedBossId = document.getElementById('leaderboard-boss-select').value;
+                sortedData = sortedData.map(u => {
+                    let bossTime = (u.bossRecords && u.bossRecords[selectedBossId]) ? u.bossRecords[selectedBossId] : 999;
+                    return { ...u, currentBossTime: bossTime };
+                });
+                sortedData = sortedData.filter(u => u.currentBossTime < 999);
+                sortedData.sort((a, b) => a.currentBossTime - b.currentBossTime);
+                valueKey = 'currentBossTime'; unit = '秒'; formatFn = (v) => v.toFixed(1);
             } else if (currentBoard === 'defense') {
                 sortedData.sort((a, b) => (b.maxMeteorWaves || 0) - (a.maxMeteorWaves || 0));
                 valueKey = 'maxMeteorWaves'; unit = '波';
