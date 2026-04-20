@@ -81,6 +81,9 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        
+        /* 下拉選單樣式 */
+        select option { background-color: #1e293b; color: #fff; }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiMzMzQiLz48L3N2Zz4=')]">
@@ -171,7 +174,7 @@
                 </div>
                 <div class="text-left flex-1">
                     <div class="text-xl font-bold text-yellow-300">隕石防禦戰</div>
-                    <div class="text-xs text-slate-400">成語解釋配對 (賺取肉塊)</div>
+                    <div class="text-xs text-slate-400">成語解釋配對 (無盡防禦模式)</div>
                 </div>
             </button>
 
@@ -213,19 +216,42 @@
         <button onclick="doLogout()" class="mt-4 text-slate-500 text-sm hover:text-white pb-4"><i class="fas fa-sign-out-alt"></i> 登出帳號</button>
     </main>
 
-    <!-- 戰前幻獸選擇彈窗 -->
+    <!-- 戰前幻獸與課文選擇彈窗 -->
     <div id="modal-select-pet" class="fixed inset-0 bg-slate-900/95 z-[100] hidden flex-col items-center justify-center p-4 backdrop-blur-md">
         <div class="sci-fi-panel p-6 rounded-3xl max-w-md w-full border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.2)]">
-            <h3 class="text-2xl font-black text-cyan-300 mb-2 text-center" id="select-pet-title">選擇出戰幻獸</h3>
-            <div id="select-pet-grid" class="flex justify-center gap-3 mb-6 flex-wrap"></div>
+            <h3 class="text-2xl font-black text-cyan-300 mb-4 text-center" id="select-pet-title">作戰準備</h3>
+            
+            <!-- 課文範圍選擇器 -->
+            <div class="mb-4">
+                <label class="text-cyan-400 font-bold text-sm mb-2 block"><i class="fas fa-book-open"></i> 選擇特訓範圍</label>
+                <div class="relative">
+                    <select id="select-lesson-range" class="w-full bg-slate-800 text-cyan-300 py-3 px-4 rounded-xl border-2 border-slate-600 focus:border-cyan-400 outline-none font-bold text-center appearance-none cursor-pointer">
+                        <option value="all">🏆 綜合練習 (全範圍)</option>
+                        <option value="L7">📖 第七課：棒球英雄夢</option>
+                        <option value="L8">📖 第八課：夢幻全壘打</option>
+                        <option value="L9">📖 第九課：單車遊日月潭</option>
+                        <option value="L10">📖 第十課：孫悟空借芭蕉扇</option>
+                        <option value="L11">📖 第十一課：最後一片葉子</option>
+                        <option value="L12">📖 第十二課：閱讀課</option>
+                        <option value="custom">🛠️ 自訂晶片 (手動輸入)</option>
+                    </select>
+                    <i class="fas fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-cyan-500 pointer-events-none"></i>
+                </div>
+            </div>
+
+            <!-- 幻獸選擇 -->
+            <label class="text-cyan-400 font-bold text-sm mb-2 block"><i class="fas fa-paw"></i> 選擇出戰幻獸</label>
+            <div id="select-pet-grid" class="flex justify-center gap-3 mb-4 flex-wrap"></div>
+            
             <div class="bg-slate-800 p-4 rounded-xl border border-slate-600 mb-6 min-h-[80px]">
                 <div id="select-pet-skill-name" class="font-bold text-yellow-400 mb-1">技能名稱</div>
                 <div id="select-pet-skill-desc" class="text-slate-300 text-sm leading-relaxed">技能效果說明...</div>
             </div>
+            
             <div class="flex gap-3">
                 <button onclick="closeSelectPetModal()" class="flex-1 btn-press bg-slate-700 text-white p-3 rounded-xl font-bold">取消</button>
                 <button onclick="confirmDeployment()" class="flex-2 w-2/3 btn-press bg-cyan-600 hover:bg-cyan-500 text-white p-3 rounded-xl font-bold shadow-[0_0_15px_rgba(6,182,212,0.5)]">
-                    <i class="fas fa-rocket"></i> 出戰
+                    <i class="fas fa-rocket"></i> 出擊
                 </button>
             </div>
         </div>
@@ -260,7 +286,7 @@
         <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-20">
             <div class="flex gap-1 text-red-500 text-2xl" id="meteor-hp"></div>
             <div class="text-yellow-400 font-bold bg-slate-800/80 px-3 py-1 rounded-full border border-yellow-500">
-                防禦波數: <span id="meteor-wave">1</span>
+                無盡防禦 波數: <span id="meteor-wave">1</span>
             </div>
         </div>
         <div id="meteor-container" class="absolute top-0 left-0 w-full h-[calc(100vh-120px)] overflow-hidden z-10"></div>
@@ -270,7 +296,10 @@
         <div class="absolute bottom-[100px] left-1/2 transform -translate-x-1/2 w-32 h-4 bg-cyan-900 rounded-full border border-cyan-400 z-20 shadow-[0_0_10px_cyan]"></div>
         <div class="absolute bottom-0 w-full h-[120px] sci-fi-panel rounded-t-2xl z-40 flex flex-col items-center justify-center p-4">
             <button id="btn-wind-skill-meteor" onclick="useWindSkillMeteor()" class="hidden absolute -top-12 right-4 bg-emerald-600 border border-emerald-300 text-white px-3 py-1 rounded-full text-xs font-bold shadow-[0_0_10px_emerald]">🌪️ 吹散干擾 (1次)</button>
-            <div class="text-cyan-400 text-sm mb-1 font-bold"><i class="fas fa-crosshairs"></i> 目標：</div>
+            <div class="text-cyan-400 text-sm mb-1 font-bold flex justify-between w-full px-2">
+                <span><i class="fas fa-crosshairs"></i> 目標：</span>
+                <span id="meteor-lesson-badge" class="text-xs bg-cyan-900 px-2 py-1 rounded"></span>
+            </div>
             <div id="meteor-question" class="text-white text-lg font-bold text-center leading-tight"></div>
         </div>
     </main>
@@ -314,6 +343,7 @@
                 <div class="w-full h-2 bg-slate-800 rounded-full mb-3 overflow-hidden">
                     <div id="boss-timer-bar" class="h-full bg-cyan-400 transition-all duration-100" style="width: 100%;"></div>
                 </div>
+                <div class="text-xs text-cyan-500 mb-1 font-bold text-right w-full" id="boss-lesson-badge"></div>
                 <div id="boss-question" class="text-white text-lg font-bold mb-4 min-h-[60px] leading-relaxed break-words"></div>
                 <div id="boss-options" class="grid grid-cols-2 gap-3"></div>
             </div>
@@ -454,46 +484,53 @@
         };
         let allUsersData = [];
 
-        /* ================= 題庫數據 (四下 L7 ~ L12) ================= */
+        /* ================= 題庫數據 (四下 L7 ~ L12) 加上課文標籤 ================= */
         const defaultIdioms = [
-            { idiom: "家喻戶曉", meaning: "家家戶戶都知曉，形容事情、名聲傳播極廣。", sentence: "她是＿＿＿＿的大明星，因此一舉一動都格外引人注目。" },
-            { idiom: "觸類旁通", meaning: "表示對已知事物的認識與理解，進而通達對其他類似事物的認知。", sentence: "他才思敏捷，往往能舉一反三，＿＿＿＿。" },
-            { idiom: "一蹶不振", meaning: "比喻一遭受挫敗，就再也不能振作起來。", sentence: "我們要有愈挫愈勇的精神，千萬不可＿＿＿＿。" },
-            { idiom: "易如反掌", meaning: "比喻事情非常容易做到。", sentence: "對大胃王而言，吃五碗飯，簡直是＿＿＿＿。" },
-            { idiom: "樂不可支", meaning: "形容快樂到了極點。", sentence: "老師宣布今天小考取消，全班同學都＿＿＿＿！" },
-            { idiom: "旗開得勝", meaning: "比喻事情才一開始就獲得成功。", sentence: "我隊＿＿＿＿，觀眾們都紛紛起立為球員鼓掌。" },
-            { idiom: "不得要領", meaning: "指無法掌握要點或主旨。", sentence: "這篇論文的邏輯混亂，使人讀後＿＿＿＿。" },
-            { idiom: "每下愈況", meaning: "比喻情況愈來愈壞。", sentence: "這家公司的營運狀況，已經＿＿＿＿。" },
-            { idiom: "怒髮衝冠", meaning: "形容盛怒的樣子。", sentence: "他遭受到如此誣賴，難怪會＿＿＿＿，大聲辯解。" },
-            { idiom: "過猶不及", meaning: "指事情要做得恰到好處。", sentence: "待人處事要圓融，應該講求中庸之道，＿＿＿＿，對於事情都毫無幫助。" },
-            { idiom: "肝膽相照", meaning: "以肝膽互相照見。比喻赤忱相處。", sentence: "他們是幾十年的老戰友了，＿＿＿＿，生死與共。" },
-            { idiom: "軟硬兼施", meaning: "委婉和強硬的手段一齊用上。", sentence: "這次會議我方代表＿＿＿＿，終於使對方讓步而達成協議。" },
-            { idiom: "盛氣凌人", meaning: "指用傲慢的氣勢壓迫別人。", sentence: "我看他是得理不饒人，才會如此＿＿＿＿的責罵對方。" },
-            { idiom: "雀屏中選", meaning: "泛指被選中。", sentence: "為了科展，同學們不眠不休，全力以赴，參加的作品終於＿＿＿＿，得到第一名。" },
-            { idiom: "老馬識途", meaning: "比喻有經驗的人對情況比較熟悉，容易把工作做好。", sentence: "他為大家找到正確的路，真不愧是＿＿＿＿。" },
-            { idiom: "熟能生巧", meaning: "熟練了自然能領悟出竅門。", sentence: "所謂「＿＿＿＿」，只要你肯勤加練習，對於這部機器就能操作自如了。" },
-            { idiom: "力透紙背", meaning: "形容人的書法遒勁有力。", sentence: "老先生的題字筆力蒼勁，真可謂＿＿＿＿。" },
-            { idiom: "捕風捉影", meaning: "風和影子均無可捉摸。比喻所做的事或所說的話毫無根據，憑空揣測。", sentence: "那些傳聞只不過是＿＿＿＿，不必理會。" },
-            { idiom: "氣焰熏天", meaning: "人的氣勢如火焰般逼人。", sentence: "他總是＿＿＿＿，相當強勢，使朋友一個一個離他而去。" },
-            { idiom: "獨當一面", meaning: "獨力擔當某一方面的重任。", sentence: "經過多年的磨練，他已經可以＿＿＿＿了。" },
-            { idiom: "菩薩心腸", meaning: "比喻慈悲之心。", sentence: "他不計較以前的衝突，以德報怨，實在是＿＿＿＿。" },
-            { idiom: "漠不關心", meaning: "冷冷淡淡，不加關心。", sentence: "對民生需求，有為的執政者不能＿＿＿＿。" },
-            { idiom: "有容乃大", meaning: "有度量，能寬容，才能夠成就大業。", sentence: "凡事＿＿＿＿，不要再斤斤計較了。" },
-            { idiom: "吳下阿蒙", meaning: "指三國 吳名將呂蒙。後用來比喻學識淺陋的人。", sentence: "他如今已是世界聞名的音樂家，不是昔日的＿＿＿＿。" },
-            { idiom: "骨瘦如柴", meaning: "人身骨架瘦得露出來，根根像木材一樣。形容非常消瘦的樣子。", sentence: "這場大病把叔叔折磨得＿＿＿＿，令人心痛。" },
-            { idiom: "趨炎附勢", meaning: "指奉承依附有權勢的人。", sentence: "＿＿＿＿或許能換得名與利，但也可能失去情誼。" },
-            { idiom: "居安思危", meaning: "處於安樂時，要想到危險可能隨時會出現。", sentence: "平時就應＿＿＿＿，及早做好防災準備。" },
-            { idiom: "義正辭嚴", meaning: "義理正當，措詞嚴厲。", sentence: "他提出的不合理要求，你大可＿＿＿＿的拒絕。" },
-            { idiom: "妄自菲薄", meaning: "隨意看輕自己，不知自重。", sentence: "在這世界上，每個人都有優點，不宜＿＿＿＿。" },
-            { idiom: "扶老攜幼", meaning: "扶著老人，牽著小孩。指男女老幼全體出動的情況。", sentence: "每到陽明山花季，總有大批遊客＿＿＿＿，上山賞花。" },
-            { idiom: "任勞任怨", meaning: "形容人做事熱心負責，不辭勞苦，不怕嫌怨。", sentence: "里長一直以來都＿＿＿＿的為大家服務，贏得里民對他的尊重。" },
-            { idiom: "任重道遠", meaning: "負擔繁重，路途遙遠。比喻長期肩負重大的任務。", sentence: "這是一件＿＿＿＿的工作，希望大家都能堅持到最後。" },
-            { idiom: "當務之急", meaning: "當前最急迫要做的事。", sentence: "為了能在比賽中衛冕成功，＿＿＿＿是加強選手信心。" },
-            { idiom: "不同凡響", meaning: "意謂不是平凡的音樂。後用來比喻特出、不平凡的人或事物。", sentence: "這首曲子的優美和弦，襯托出他們＿＿＿＿的完美和聲。" }
+            { idiom: "家喻戶曉", meaning: "家家戶戶都知曉，形容事情、名聲傳播極廣。", sentence: "她是＿＿＿＿的大明星，因此一舉一動都格外引人注目。", lesson: "L7" },
+            { idiom: "觸類旁通", meaning: "表示對已知事物的認識與理解，進而通達對其他類似事物的認知。", sentence: "他才思敏捷，往往能舉一反三，＿＿＿＿。", lesson: "L7" },
+            { idiom: "一蹶不振", meaning: "比喻一遭受挫敗，就再也不能振作起來。", sentence: "我們要有愈挫愈勇的精神，千萬不可＿＿＿＿。", lesson: "L7" },
+            { idiom: "易如反掌", meaning: "比喻事情非常容易做到。", sentence: "對大胃王而言，吃五碗飯，簡直是＿＿＿＿。", lesson: "L7" },
+            { idiom: "樂不可支", meaning: "形容快樂到了極點。", sentence: "老師宣布今天小考取消，全班同學都＿＿＿＿！", lesson: "L7" },
+            { idiom: "旗開得勝", meaning: "比喻事情才一開始就獲得成功。", sentence: "我隊＿＿＿＿，觀眾們都紛紛起立為球員鼓掌。", lesson: "L7" },
+            
+            { idiom: "不得要領", meaning: "指無法掌握要點或主旨。", sentence: "這篇論文的邏輯混亂，使人讀後＿＿＿＿。", lesson: "L8" },
+            { idiom: "每下愈況", meaning: "比喻情況愈來愈壞。", sentence: "這家公司的營運狀況，已經＿＿＿＿。", lesson: "L8" },
+            { idiom: "怒髮衝冠", meaning: "形容盛怒的樣子。", sentence: "他遭受到如此誣賴，難怪會＿＿＿＿，大聲辯解。", lesson: "L8" },
+            { idiom: "過猶不及", meaning: "指事情要做得恰到好處。", sentence: "待人處事要圓融，應該講求中庸之道，＿＿＿＿，對於事情都毫無幫助。", lesson: "L8" },
+            { idiom: "肝膽相照", meaning: "以肝膽互相照見。比喻赤忱相處。", sentence: "他們是幾十年的老戰友了，＿＿＿＿，生死與共。", lesson: "L8" },
+            { idiom: "軟硬兼施", meaning: "委婉和強硬的手段一齊用上。", sentence: "這次會議我方代表＿＿＿＿，終於使對方讓步而達成協議。", lesson: "L8" },
+            
+            { idiom: "盛氣凌人", meaning: "指用傲慢的氣勢壓迫別人。", sentence: "我看他是得理不饒人，才會如此＿＿＿＿的責罵對方。", lesson: "L9" },
+            { idiom: "雀屏中選", meaning: "泛指被選中。", sentence: "為了科展，同學們不眠不休，全力以赴，參加的作品終於＿＿＿＿，得到第一名。", lesson: "L9" },
+            { idiom: "老馬識途", meaning: "比喻有經驗的人對情況比較熟悉，容易把工作做好。", sentence: "他為大家找到正確的路，真不愧是＿＿＿＿。", lesson: "L9" },
+            { idiom: "熟能生巧", meaning: "熟練了自然能領悟出竅門。", sentence: "所謂「＿＿＿＿」，只要你肯勤加練習，對於這部機器就能操作自如了。", lesson: "L9" },
+            { idiom: "力透紙背", meaning: "形容人的書法遒勁有力。", sentence: "老先生的題字筆力蒼勁，真可謂＿＿＿＿。", lesson: "L9" },
+            { idiom: "捕風捉影", meaning: "風和影子均無可捉摸。比喻所做的事或所說的話毫無根據，憑空揣測。", sentence: "那些傳聞只不過是＿＿＿＿，不必理會。", lesson: "L9" },
+            
+            { idiom: "氣焰熏天", meaning: "人的氣勢如火焰般逼人。", sentence: "他總是＿＿＿＿，相當強勢，使朋友一個一個離他而去。", lesson: "L10" },
+            { idiom: "獨當一面", meaning: "獨力擔當某一方面的重任。", sentence: "經過多年的磨練，他已經可以＿＿＿＿了。", lesson: "L10" },
+            { idiom: "菩薩心腸", meaning: "比喻慈悲之心。", sentence: "他不計較以前的衝突，以德報怨，實在是＿＿＿＿。", lesson: "L10" },
+            { idiom: "漠不關心", meaning: "冷冷淡淡，不加關心。", sentence: "對民生需求，有為的執政者不能＿＿＿＿。", lesson: "L10" },
+            { idiom: "有容乃大", meaning: "有度量，能寬容，才能夠成就大業。", sentence: "凡事＿＿＿＿，不要再斤斤計較了。", lesson: "L10" },
+            
+            { idiom: "吳下阿蒙", meaning: "指三國 吳名將呂蒙。後用來比喻學識淺陋的人。", sentence: "他如今已是世界聞名的音樂家，不是昔日的＿＿＿＿。", lesson: "L11" },
+            { idiom: "骨瘦如柴", meaning: "人身骨架瘦得露出來，根根像木材一樣。形容非常消瘦的樣子。", sentence: "這場大病把叔叔折磨得＿＿＿＿，令人心痛。", lesson: "L11" },
+            { idiom: "趨炎附勢", meaning: "指奉承依附有權勢的人。", sentence: "＿＿＿＿或許能換得名與利，但也可能失去情誼。", lesson: "L11" },
+            { idiom: "居安思危", meaning: "處於安樂時，要想到危險可能隨時會出現。", sentence: "平時就應＿＿＿＿，及早做好防災準備。", lesson: "L11" },
+            { idiom: "義正辭嚴", meaning: "義理正當，措詞嚴厲。", sentence: "他提出的不合理要求，你大可＿＿＿＿的拒絕。", lesson: "L11" },
+            { idiom: "妄自菲薄", meaning: "隨意看輕自己，不知自重。", sentence: "在這世界上，每個人都有優點，不宜＿＿＿＿。", lesson: "L11" },
+            
+            { idiom: "扶老攜幼", meaning: "扶著老人，牽著小孩。指男女老幼全體出動的情況。", sentence: "每到陽明山花季，總有大批遊客＿＿＿＿，上山賞花。", lesson: "L12" },
+            { idiom: "任勞任怨", meaning: "形容人做事熱心負責，不辭勞苦，不怕嫌怨。", sentence: "里長一直以來都＿＿＿＿的為大家服務，贏得里民對他的尊重。", lesson: "L12" },
+            { idiom: "任重道遠", meaning: "負擔繁重，路途遙遠。比喻長期肩負重大的任務。", sentence: "這是一件＿＿＿＿的工作，希望大家都能堅持到最後。", lesson: "L12" },
+            { idiom: "當務之急", meaning: "當前最急迫要做的事。", sentence: "為了能在比賽中衛冕成功，＿＿＿＿是加強選手信心。", lesson: "L12" },
+            { idiom: "不同凡響", meaning: "意謂不是平凡的音樂。後用來比喻特出、不平凡的人或事物。", sentence: "這首曲子的優美和弦，襯托出他們＿＿＿＿的完美和聲。", lesson: "L12" }
         ];
 
-        window.idiomData = JSON.parse(localStorage.getItem('idiom_data_v8')) || [...defaultIdioms];
-        window.mistakesList = JSON.parse(localStorage.getItem('idiom_mistakes_v8')) || [];
+        // 升級版本至 v10 以強制更新題庫格式 (含 lesson 標籤)
+        window.idiomData = JSON.parse(localStorage.getItem('idiom_data_v10')) || [...defaultIdioms];
+        window.mistakesList = JSON.parse(localStorage.getItem('idiom_mistakes_v10')) || [];
+        window.currentQuestionPool = [...window.idiomData]; // 當前作戰題庫
 
         /* ================= 幻獸與巨獸圖鑑 ================= */
         const PET_DEX = {
@@ -506,18 +543,18 @@
         };
 
         const BOSS_DATA = [
-            { id: 1, name: "狂武星骸・白羊", icon: "fa-aries", type: "極速型", hpMultiplier: 0.6, timeLimit: 5 },
-            { id: 2, name: "重力星骸・金牛", icon: "fa-taurus", type: "血牛型", hpMultiplier: 2.5, timeLimit: 12 },
-            { id: 3, name: "幻影星骸・雙子", icon: "fa-gemini", type: "干擾型", hpMultiplier: 1.0, timeLimit: 10 },
-            { id: 4, name: "深淵星骸・巨蟹", icon: "fa-cancer", type: "裝甲型", hpMultiplier: 1.2, timeLimit: 10 },
-            { id: 5, name: "烈陽星骸・獅子", icon: "fa-leo", type: "霸王型", hpMultiplier: 1.5, timeLimit: 8 },
-            { id: 6, name: "秩序星骸・處女", icon: "fa-virgo", type: "精準型", hpMultiplier: 1.0, timeLimit: 10 },
-            { id: 7, name: "審判星骸・天秤", icon: "fa-libra", type: "平衡型", hpMultiplier: 1.0, timeLimit: 10 },
-            { id: 8, name: "猛毒星骸・天蠍", icon: "fa-scorpio", type: "劇毒型", hpMultiplier: 1.1, timeLimit: 9 },
-            { id: 9, name: "追擊星骸・射手", icon: "fa-sagittarius", type: "連擊型", hpMultiplier: 1.8, timeLimit: 10 },
-            { id: 10, name: "冰晶星骸・摩羯", icon: "fa-capricorn", type: "凍結型", hpMultiplier: 1.0, timeLimit: 12 },
-            { id: 11, name: "混沌星骸・水瓶", icon: "fa-aquarius", type: "無序型", hpMultiplier: 0.8, timeLimit: 15 },
-            { id: 12, name: "魅惑星骸・雙魚", icon: "fa-pisces", type: "幻術型", hpMultiplier: 0.9, timeLimit: 10 }
+            { id: 1, name: "狂武星骸・白羊", icon: "fa-aries", type: "極速型", hpMultiplier: 0.6, timeLimit: 10 },
+            { id: 2, name: "重力星骸・金牛", icon: "fa-taurus", type: "血牛型", hpMultiplier: 2.5, timeLimit: 15 },
+            { id: 3, name: "幻影星骸・雙子", icon: "fa-gemini", type: "干擾型", hpMultiplier: 1.0, timeLimit: 15 },
+            { id: 4, name: "深淵星骸・巨蟹", icon: "fa-cancer", type: "裝甲型", hpMultiplier: 1.2, timeLimit: 15 },
+            { id: 5, name: "烈陽星骸・獅子", icon: "fa-leo", type: "霸王型", hpMultiplier: 1.5, timeLimit: 12 },
+            { id: 6, name: "秩序星骸・處女", icon: "fa-virgo", type: "精準型", hpMultiplier: 1.0, timeLimit: 15 },
+            { id: 7, name: "審判星骸・天秤", icon: "fa-libra", type: "平衡型", hpMultiplier: 1.0, timeLimit: 15 },
+            { id: 8, name: "猛毒星骸・天蠍", icon: "fa-scorpio", type: "劇毒型", hpMultiplier: 1.1, timeLimit: 12 },
+            { id: 9, name: "追擊星骸・射手", icon: "fa-sagittarius", type: "連擊型", hpMultiplier: 1.8, timeLimit: 15 },
+            { id: 10, name: "冰晶星骸・摩羯", icon: "fa-capricorn", type: "凍結型", hpMultiplier: 1.0, timeLimit: 15 },
+            { id: 11, name: "混沌星骸・水瓶", icon: "fa-aquarius", type: "無序型", hpMultiplier: 0.8, timeLimit: 18 },
+            { id: 12, name: "魅惑星骸・雙魚", icon: "fa-pisces", type: "幻術型", hpMultiplier: 0.9, timeLimit: 15 }
         ];
 
         /* ================= 雲端同步與認證 ================= */
@@ -662,11 +699,15 @@
 
         let sessionPool = [];
         function getNextIdiom() {
-            if (sessionPool.length === 0) sessionPool = [...window.idiomData].sort(() => Math.random() - 0.5);
+            if (sessionPool.length === 0) {
+                // 如果題庫空了，自動從目前選擇的範圍內重新洗牌補充 (無限循環)
+                sessionPool = [...window.currentQuestionPool].sort(() => Math.random() - 0.5);
+            }
             return sessionPool.pop();
         }
         function getOptions(correct, count = 4) {
             let opts = [correct];
+            // 干擾選項一律從「所有題庫」中隨機抓取，增加難度與豐富度
             let pool = window.idiomData.filter(i => i.idiom !== correct).sort(() => Math.random() - 0.5);
             for(let i=0; i<count-1; i++) if(pool[i]) opts.push(pool[i].idiom);
             return opts.sort(() => Math.random() - 0.5);
@@ -676,7 +717,7 @@
         window.recordMistake = (idiomStr) => {
             if (!window.mistakesList.includes(idiomStr)) {
                 window.mistakesList.push(idiomStr);
-                localStorage.setItem('idiom_mistakes_v8', JSON.stringify(window.mistakesList));
+                localStorage.setItem('idiom_mistakes_v10', JSON.stringify(window.mistakesList));
             }
         };
 
@@ -694,7 +735,7 @@
                 div.className = "sci-fi-panel p-3 rounded-xl border-l-4 border-rose-500 flex justify-between items-center";
                 div.innerHTML = `
                     <div>
-                        <div class="font-bold text-lg text-white">${item.idiom}</div>
+                        <div class="font-bold text-lg text-white">${item.idiom} <span class="text-xs text-rose-400 ml-2">${item.lesson || ''}</span></div>
                         <div class="text-xs text-slate-400">${item.meaning}</div>
                     </div>
                     <button onclick="removeMistake('${item.idiom}')" class="text-slate-500 hover:text-red-400 p-2"><i class="fas fa-trash"></i></button>
@@ -705,7 +746,7 @@
 
         window.removeMistake = (idiomStr) => {
             window.mistakesList = window.mistakesList.filter(i => i !== idiomStr);
-            localStorage.setItem('idiom_mistakes_v8', JSON.stringify(window.mistakesList));
+            localStorage.setItem('idiom_mistakes_v10', JSON.stringify(window.mistakesList));
             window.showMistakesScreen();
         };
 
@@ -721,6 +762,7 @@
                 div.innerHTML = `
                     <div class="flex-1 pr-2">
                         <span class="font-bold text-cyan-400">${item.idiom}</span>
+                        <span class="text-xs text-slate-500 ml-2">${item.lesson || '自訂'}</span>
                         <div class="text-xs text-slate-400 truncate">${item.meaning}</div>
                     </div>
                     <button onclick="deleteIdiom('${item.idiom}')" class="text-red-900 hover:text-red-500 p-1"><i class="fas fa-times-circle"></i></button>
@@ -736,8 +778,8 @@
             if (!idiom || !meaning || !sentence || !sentence.includes("＿＿＿＿")) return showToast("資料不完整或缺少「＿＿＿＿」", "#ef4444");
             if (window.idiomData.some(i => i.idiom === idiom)) return showToast("晶片已存在", "#f59e0b");
             
-            window.idiomData.push({ idiom, meaning, sentence });
-            localStorage.setItem('idiom_data_v8', JSON.stringify(window.idiomData));
+            window.idiomData.push({ idiom, meaning, sentence, lesson: "custom" });
+            localStorage.setItem('idiom_data_v10', JSON.stringify(window.idiomData));
             document.getElementById('input-idiom').value = ''; document.getElementById('input-meaning').value = ''; document.getElementById('input-sentence').value = '';
             showToast("晶片寫入成功！", "#10b981"); window.renderIdiomList();
         };
@@ -745,7 +787,7 @@
         window.deleteIdiom = (idiomStr) => {
             if (window.idiomData.length <= 5) return showToast("最少需保留 5 組數據", "#ef4444");
             window.idiomData = window.idiomData.filter(i => i.idiom !== idiomStr);
-            localStorage.setItem('idiom_data_v8', JSON.stringify(window.idiomData));
+            localStorage.setItem('idiom_data_v10', JSON.stringify(window.idiomData));
             if(window.mistakesList.includes(idiomStr)) window.removeMistake(idiomStr);
             window.renderIdiomList();
         };
@@ -753,17 +795,17 @@
         window.resetDefaultIdioms = () => {
             if(confirm("確定要重置題庫嗎？自訂的晶片將被刪除。")) {
                 window.idiomData = [...defaultIdioms];
-                localStorage.setItem('idiom_data_v8', JSON.stringify(window.idiomData));
+                localStorage.setItem('idiom_data_v10', JSON.stringify(window.idiomData));
                 window.renderIdiomList(); showToast("系統重置完畢", "#10b981");
             }
         };
 
-        /* ================= 戰前準備 ================= */
+        /* ================= 戰前準備 (含範圍選擇) ================= */
         let pendingMode = '', activePetId = 1, windSkillUsed = false; 
 
         window.openSelectPetModal = (mode) => {
             pendingMode = mode; activePetId = inventory.unlockedPets[0];
-            document.getElementById('select-pet-title').innerText = mode === 'meteor' ? '選擇防禦主力' : '選擇討伐主力';
+            document.getElementById('select-pet-title').innerText = mode === 'meteor' ? '防禦作戰準備' : '討伐作戰準備';
             document.getElementById('modal-select-pet').classList.remove('hidden'); document.getElementById('modal-select-pet').classList.add('flex');
             renderSelectPet();
         };
@@ -788,6 +830,24 @@
         };
 
         window.confirmDeployment = () => {
+            // 根據下拉選單設定題目範圍
+            const range = document.getElementById('select-lesson-range').value;
+            if (range === 'all') {
+                window.currentQuestionPool = [...window.idiomData];
+            } else if (range === 'custom') {
+                window.currentQuestionPool = window.idiomData.filter(i => i.lesson === 'custom');
+                if (window.currentQuestionPool.length === 0) {
+                    showToast("沒有自訂晶片，改為綜合練習", "#f59e0b");
+                    window.currentQuestionPool = [...window.idiomData];
+                }
+            } else {
+                window.currentQuestionPool = window.idiomData.filter(i => i.lesson === range);
+                if (window.currentQuestionPool.length === 0) {
+                    showToast("該課尚無題庫，改為綜合練習", "#f59e0b");
+                    window.currentQuestionPool = [...window.idiomData];
+                }
+            }
+
             window.closeSelectPetModal(); windSkillUsed = false; sessionPool = [];
             if (pendingMode === 'meteor') startGameMeteor(); else startGameBoss();
         };
@@ -823,6 +883,7 @@
 
             currentMeteorTarget = getNextIdiom();
             document.getElementById('meteor-question').innerText = `「${currentMeteorTarget.meaning}」`;
+            document.getElementById('meteor-lesson-badge').innerText = currentMeteorTarget.lesson || '特訓';
             spawnMeteors();
         }
 
@@ -855,6 +916,11 @@
         function shootMeteor(element, selected) {
             if (isWaveResolving) return; 
             isWaveResolving = true; inventory.totalAnswered++;
+
+            const petSprite = document.getElementById('meteor-pet-sprite');
+            petSprite.classList.remove('pet-attack-anim');
+            void petSprite.offsetWidth;
+            petSprite.classList.add('pet-attack-anim');
 
             if (selected === currentMeteorTarget.idiom) {
                 inventory.correctAnswers++;
@@ -922,6 +988,7 @@
 
             isBossResolving = false; currentBossQ = getNextIdiom();
             document.getElementById('boss-question').innerText = currentBossQ.sentence;
+            document.getElementById('boss-lesson-badge').innerText = currentBossQ.lesson || '特訓';
             
             const optsEl = document.getElementById('boss-options'); optsEl.innerHTML = '';
             getOptions(currentBossQ.idiom).forEach(opt => {
@@ -956,16 +1023,30 @@
             if (isBossResolving) return;
             isBossResolving = true; clearInterval(bossTimerInterval); inventory.totalAnswered++;
 
+            const petSprite = document.getElementById('battle-pet-sprite');
+            petSprite.classList.remove('pet-attack-anim');
+            void petSprite.offsetWidth;
+            petSprite.classList.add('pet-attack-anim');
+
             if (selected === currentBossQ.idiom) {
-                inventory.correctAnswers++; combo++; document.getElementById('combo-counter').innerText = combo;
+                inventory.correctAnswers++; combo++; 
+                
+                const comboEl = document.getElementById('combo-counter');
+                comboEl.innerText = combo;
+                comboEl.parentElement.classList.remove('shake');
+                void comboEl.parentElement.offsetWidth;
+                comboEl.parentElement.classList.add('shake');
 
                 let dmg = 50 * (1 + Math.min(combo * 0.1, 0.5)); 
-                let isCrit = (maxTime - timeLeft) < 3;
-                let critMult = 1, floatText = `-${Math.floor(dmg)}`;
+                let isCrit = (maxTime - timeLeft) < 5;
+                let critMult = 1;
+                
+                let comboPrefix = combo > 1 ? `${combo}連擊! ` : '';
+                let floatText = `${comboPrefix}-${Math.floor(dmg)}`;
 
                 if (isCrit) {
                     critMult = activePetId === 6 ? 2.5 : 1.5; 
-                    dmg *= critMult; floatText = `💥暴擊! -${Math.floor(dmg)}`;
+                    dmg *= critMult; floatText = `💥暴擊! ${comboPrefix}-${Math.floor(dmg)}`;
                 }
 
                 bossHp -= dmg;
